@@ -1,5 +1,5 @@
 #include <torch/extension.h>
-#include "add2.h"
+#include "nn_cuda.h"
 
 void torch_launch_add2(torch::Tensor &c,
                        const torch::Tensor &a,
@@ -20,6 +20,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           "add2 kernel warpper");
 }
 
-TORCH_LIBRARY(add2, m) {
+TORCH_LIBRARY(nn_cuda, m) {
     m.def("torch_launch_add2", torch_launch_add2);
 }

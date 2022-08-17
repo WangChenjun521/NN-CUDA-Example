@@ -31,9 +31,9 @@ def run_cuda():
     if args.compiler == 'jit':
         cuda_module.torch_launch_add2(cuda_c, a, b, n)
     elif args.compiler == 'setup':
-        add2.torch_launch_add2(cuda_c, a, b, n)
+        nn_cuda.torch_launch_add2(cuda_c, a, b, n)
     elif args.compiler == 'cmake':
-        torch.ops.add2.torch_launch_add2(cuda_c, a, b, n)
+        torch.ops.nn_cuda.torch_launch_add2(cuda_c, a, b, n)
     else:
         raise Exception("Type of cuda compiler must be one of jit/setup/cmake.")
 
@@ -50,12 +50,12 @@ if __name__ == "__main__":
 
     if args.compiler == 'jit':
         from torch.utils.cpp_extension import load
-        cuda_module = load(name="add2",
+        cuda_module = load(name="nn_cuda",
                            extra_include_paths=["include"],
-                           sources=["pytorch/add2_ops.cpp", "kernel/add2_kernel.cu"],
+                           sources=["pytorch/nn_cuda_ops.cpp", "kernel/add2_kernel.cu"],
                            verbose=True)
     elif args.compiler == 'setup':
-        import add2
+        import nn_cuda
     elif args.compiler == 'cmake':
         torch.ops.load_library("build/libadd2.so")
     else:
