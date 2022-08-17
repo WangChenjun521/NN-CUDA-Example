@@ -1,5 +1,6 @@
 #include <torch/extension.h>
 #include "nn_cuda.h"
+#include <eigen3/Eigen/Dense>
 
 void torch_launch_add2(torch::Tensor &c,
                        const torch::Tensor &a,
