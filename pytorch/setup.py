@@ -7,7 +7,7 @@ setup(
     ext_modules=[
         CUDAExtension(
             "nn_cuda",
-            ["pytorch/nn_cuda_ops.cpp", "kernel/add2_kernel.cu"],
+            ["pytorch/nn_cuda_ops.cpp", "kernel/add2_kernel.cu","kernel/compute_distance.cu"],
         )
     ],
     cmdclass={

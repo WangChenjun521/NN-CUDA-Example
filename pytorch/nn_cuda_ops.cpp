@@ -18,6 +18,9 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("launch_add2",
           &launch_add2,
           "add2 kernel warpper");
+    m.def("backproject_depth_float",
+          &backproject_depth_float,
+          "backproject_depth_float");
 }
 
 TORCH_LIBRARY(nn_cuda, m) {
