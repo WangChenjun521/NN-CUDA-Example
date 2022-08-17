@@ -23,25 +23,49 @@ We also provide several python codes to call the CUDA kernels, including kernel 
 
 ## Code structure
 ```shell
+.
+├── add2.egg-info
+│   ├── dependency_links.txt
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   └── top_level.txt
+├── build
+│   ├── bdist.linux-x86_64
+│   ├── lib.linux-x86_64-cpython-38
+│   │   ├── add2.cpython-38-x86_64-linux-gnu.so
+│   │   └── nn_cuda.cpython-38-x86_64-linux-gnu.so
+│   └── temp.linux-x86_64-cpython-38
+│       ├── build.ninja
+│       ├── kernel
+│       │   ├── add2_kernel.o
+│       │   └── compute_distance.o
+│       └── pytorch
+│           ├── add2_ops.o
+│           └── nn_cuda_ops.o
+├── dist
+│   ├── add2-0.0.0-py3.8-linux-x86_64.egg
+│   └── nn_cuda-0.0.0-py3.8-linux-x86_64.egg
+├── image
+│   └── logo.png
 ├── include
-│   └── add2.h # header file of add2 cuda kernel
+│   └── nn_cuda.h
 ├── kernel
-│   └── add2_kernel.cu # add2 cuda kernel
-├── pytorch
-│   ├── add2_ops.cpp # torch wrapper of add2 cuda kernel
-│   ├── time.py # time comparison of cuda kernel and torch
-│   ├── train.py # training using custom cuda kernel
-│   ├── setup.py
-│   └── CMakeLists.txt
-├── tensorflow
-│   ├── add2_ops.cpp # tensorflow wrapper of add2 cuda kernel
-│   ├── time.py # time comparison of cuda kernel and tensorflow
-│   ├── train.py # training using custom cuda kernel
-│   └── CMakeLists.txt
+│   ├── add2_kernel.cu
+│   └── compute_distance.cu
 ├── LICENSE
+├── nn_cuda.egg-info
+│   ├── dependency_links.txt
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   └── top_level.txt
+├── pytorch
+│   ├── nn_cuda_ops.cpp
+│   └── setup.py
 └── README.md
-```
 
+13 directories, 25 files
+
+```
 ## PyTorch
 ### Compile cpp and cuda
 **JIT**  
@@ -52,58 +76,3 @@ Directly run the python code.
 python3 pytorch/setup.py install
 ```
 
-**CMake**  
-```shell
-mkdir build
-cd build
-cmake ../pytorch
-make
-```
-
-### Run python
-**Compare kernel running time**  
-```shell
-python3 pytorch/time.py --compiler jit
-python3 pytorch/time.py --compiler setup
-python3 pytorch/time.py --compiler cmake
-```
-
-**Train model**  
-```shell
-python3 pytorch/train.py --compiler jit
-python3 pytorch/train.py --compiler setup
-python3 pytorch/train.py --compiler cmake
-```
-
-## TensorFlow
-### Compile cpp and cuda
-**CMake**  
-```shell
-mkdir build
-cd build
-cmake ../tensorflow
-make
-```
-
-### Run python
-**Compare kernel running time**  
-```shell
-python3 tensorflow/time.py --compiler cmake
-```
-
-**Train model**  
-```shell
-python3 tensorflow/train.py --compiler cmake
-```
-
-## Implementation details (in Chinese)
-[PyTorch自定义CUDA算子教程与运行时间分析](https://godweiyang.com/2021/03/18/torch-cpp-cuda)  
-[详解PyTorch编译并调用自定义CUDA算子的三种方式](https://godweiyang.com/2021/03/21/torch-cpp-cuda-2)  
-[三分钟教你如何PyTorch自定义反向传播](https://godweiyang.com/2021/03/24/torch-cpp-cuda-3)
-
-## F.A.Q
-> **Q.** ImportError: libc10.so: cannot open shared object file: No such file or directory  
-**A.** You must do `import torch` before `import add2`.
-
-> **Q.** tensorflow.python.framework.errors_impl.NotFoundError: build/libadd2.so: undefined symbol: _ZTIN10tensorflow8OpKernelE  
-**A.** Check if `${TF_LFLAGS}` in `CmakeLists.txt` is correct.
