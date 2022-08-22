@@ -1,4 +1,5 @@
 #include<stdio.h>
+# include "nn_cuda.h"
 
 __global__ void add2_kernel(float* c,
                             const float* a,
