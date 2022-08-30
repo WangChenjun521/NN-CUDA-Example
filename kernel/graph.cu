@@ -7,6 +7,8 @@
 #include <cmath>
 #include <Eigen/Dense>
 
+#include "open3d/Open3D.h"
+
 #include <open3d/core/Tensor.h>
 #include <open3d/core/TensorKey.h>
 #include <open3d/core/MemoryManager.h>
@@ -15,7 +17,32 @@
 
 #include "core/PlatformIndependence.h"
 #include "geometry/WarpUtilities.h"
+ 
+ #include "open3d/core/Dispatch.h"
+ #include "open3d/core/Dtype.h"
+ #include "open3d/core/MemoryManager.h"
+ #include "open3d/core/SizeVector.h"
+ #include "open3d/core/Tensor.h"
+ #include "open3d/t/geometry/Utility.h"
+ #include "open3d/t/geometry/kernel/GeometryIndexer.h"
+ #include "open3d/t/geometry/kernel/GeometryMacros.h"
+ #include "open3d/t/geometry/kernel/TSDFVoxel.h"
+ #include "open3d/t/geometry/kernel/TSDFVoxelGrid.h"
+ #include "open3d/utility/Logging.h"
+ #include "open3d/utility/MiniVec.h"
+ #include "open3d/utility/Timer.h"
+ 
+///for cuda
+#include "open3d/core/CUDAUtils.h"
+// #include "open3d/core/ParallelFor.h"
 
+#include <cstdint>
+#include <type_traits>
+#include "open3d/core/Device.h"
+#include "open3d/utility/Logging.h"
+#include "open3d/utility/Overload.h"
+#include "open3d/utility/Parallel.h"
+#include "open3d/utility/Preprocessor.h"
 
 
 
@@ -45,7 +72,7 @@ __global__ void ElementWiseKernel_(int64_t n, func_t f) {
 
 /// Run a function in parallel on CUDA.
 template <typename func_t>
-void ParallelForCUDA_(const o3c::Device& device, int64_t n, const func_t& func) {
+ void  ParallelForCUDA_this(const o3c::Device& device, int64_t n, const func_t& func) {
     if (device.GetType() != o3c::Device::DeviceType::CUDA) {
         o3u::LogError("ParallelFor for CUDA cannot run on device {}.",
                           device.ToString());
@@ -68,14 +95,14 @@ void ParallelForCUDA_(const o3c::Device& device, int64_t n, const func_t& func) 
 }
 
 
-template <typename func_t>
-void ParallelFor(const o3c::Device& device, int64_t n, const func_t& func) {
-// #ifdef __CUDACC__
-    ParallelForCUDA_(device, n, func);
-// #else
-//     ParallelForCPU_(device, n, func);
-// #endif
-}
+// template <typename func_t>
+// void ParallelFor_this(const o3c::Device& device, int64_t n, const func_t& func) {
+// // #ifdef __CUDACC__
+//     ParallelForCUDA_this(device, n, func);
+// // #else
+// //     ParallelForCPU_(device, n, func);
+// // #endif
+// }
 
 
 // // ================================================================//
@@ -85,7 +112,7 @@ void ParallelFor(const o3c::Device& device, int64_t n, const func_t& func) {
 using namespace nnrt::geometry::kernel::warp;
 
 template<open3d::core::Device::DeviceType TDeviceType, bool TUseValidAnchorThreshold>
-void ComputeAnchorsAndWeightsEuclidean
+void ComputeAnchorsAndWeightsEuclidean_cpp
 		(open3d::core::Tensor& anchors, o3c::Tensor& weights, const o3c::Tensor& points,
 		 const o3c::Tensor& nodes, int anchor_count, int minimum_valid_anchor_count,
 		 const float node_coverage) {
@@ -105,13 +132,13 @@ void ComputeAnchorsAndWeightsEuclidean
 	NDArrayIndexer anchor_indexer(anchors, 1);
 	NDArrayIndexer weight_indexer(weights, 1);
 
-	ParallelFor(
+	ParallelForCUDA_this(
 			points.GetDevice(), point_count,
-			[=] OPEN3D_DEVICE(int64_t workload_idx) {
+			[=]  __host__ __device__ (int64_t workload_idx) {
 				auto point_data = point_indexer.GetDataPtr<float>(workload_idx);
 				Eigen::Vector3f point(point_data[0], point_data[1], point_data[2]);
 
-				// region ===================== COMPUTE ANCHOR POINTS & WEIGHTS ================================
+				// // region ===================== COMPUTE ANCHOR POINTS & WEIGHTS ================================
 				auto anchor_indices = anchor_indexer.template GetDataPtr<int32_t>(workload_idx);
 				auto anchor_weights = weight_indexer.template GetDataPtr<float>(workload_idx);
 				if (TUseValidAnchorThreshold) {
@@ -128,24 +155,35 @@ void ComputeAnchorsAndWeightsEuclidean
 }
 
 
-// void ComputeAnchorsAndWeightsEuclidean_C(open3d::core::Tensor& anchors, open3d::core::Tensor& weights, const open3d::core::Tensor& points,
-//                                        const open3d::core::Tensor& nodes, const int anchor_count, const int minimum_valid_anchor_count,
-//                                        const float node_coverage) {
-void ComputeAnchorsAndWeightsEuclidean_C() {
-	// open3d::core::Device device = points.GetDevice();
-	// open3d::core::Device::DeviceType device_type = device.GetType();
-	// open3d::core::Device a= core::Device::DeviceType::CPU;
+void ComputeAnchorsAndWeightsEuclidean_C(open3d::core::Tensor& anchors, open3d::core::Tensor& weights, const open3d::core::Tensor& points,
+                                       const open3d::core::Tensor& nodes, const int anchor_count, const int minimum_valid_anchor_count,
+                                       const float node_coverage) {
+// void ComputeAnchorsAndWeightsEuclidean_C() {
+	open3d::core::Device device = points.GetDevice();
+	open3d::core::Device::DeviceType device_type = device.GetType();
 	
-	using namespace std;
-	std::cout<<"ok!"<<std::endl;
+	
+	// open3d::core::Device a= core::Device::DeviceType::CPU;
+	// open3d::utility::LogInfo("Not fully");
+	// o3c::Device::DeviceType a;
+	// open3d::core::Tensor *b;
+	// using namespace std;
+	// cout<<"ok!"<<endl;
+	// Eigen::Vector3f node(1.1, 2.1, 2.3);
+	// cout<< node[0]<<endl;
+
+
+
+	ComputeAnchorsAndWeightsEuclidean_cpp<core::Device::DeviceType::CUDA, true>(
+						anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
 // 	switch (device_type) {
 // 		case core::Device::DeviceType::CPU:
 // 			if (minimum_valid_anchor_count > 0) {
-// 				ComputeAnchorsAndWeightsEuclidean<core::Device::DeviceType::CPU, true>(
-// 						anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
+// 				// ComputeAnchorsAndWeightsEuclidean<core::Device::DeviceType::CPU, true>(
+// 				// 		anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
 // 			} else {
-// 				ComputeAnchorsAndWeightsEuclidean<core::Device::DeviceType::CPU, false>(
-// 						anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
+// 				// ComputeAnchorsAndWeightsEuclidean<core::Device::DeviceType::CPU, false>(
+// 				// 		anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
 // 			}
 // 			break;
 // 		case core::Device::DeviceType::CUDA:
@@ -162,7 +200,7 @@ void ComputeAnchorsAndWeightsEuclidean_C() {
 // // #endif
 // 			break;
 // 		default:
-			utility::LogError("Unimplemented device");
+// 			utility::LogError("Unimplemented device");
 // 			break;
 // 	}
 }
@@ -208,9 +246,9 @@ void ComputeAnchorsAndWeightsEuclidean_C() {
 
 
 
-// py::tuple compute_anchors_and_weights_euclidean(const o3c::Tensor& points, const o3c::Tensor& nodes, int anchor_count, int minimum_valid_anchor_count,
-//                                             float node_coverage) {
-// 	o3c::Tensor anchors, weights;
-// 	ComputeAnchorsAndWeightsEuclidean(anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
-// 	return py::make_tuple(anchors, weights);
-// }
+py::tuple ComputeAnchorsAndWeightsEuclidean_CCC(const o3c::Tensor& points, const o3c::Tensor& nodes, int anchor_count, int minimum_valid_anchor_count,
+                                            float node_coverage) {
+	o3c::Tensor anchors, weights;
+	ComputeAnchorsAndWeightsEuclidean_C(anchors, weights, points, nodes, anchor_count, minimum_valid_anchor_count, node_coverage);
+	return py::make_tuple(anchors, weights);
+}

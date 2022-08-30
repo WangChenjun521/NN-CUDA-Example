@@ -78,7 +78,7 @@ inline void FindEuclideanKnn_BruteForce(int32_t* nearest_neighbor_indices, float
 }
 
 template<o3c::Device::DeviceType TDeviceType>
-NNRT_DEVICE_WHEN_CUDACC
+// NNRT_DEVICE_WHEN_CUDACC
 inline void ProcessPointEuclideanKnn_BruteForce(int& max_at_index, float& max_squared_distance, int32_t* nearest_neighbor_indices,
                                                 float* squared_distances, const int k, const Eigen::Vector3f& query_point,
                                                 const open3d::t::geometry::kernel::NDArrayIndexer& reference_point_indexer, const int i_point) {
@@ -104,6 +104,7 @@ inline void ProcessPointEuclideanKnn_BruteForce(int& max_at_index, float& max_sq
 
 template<o3c::Device::DeviceType TDeviceType>
 NNRT_DEVICE_WHEN_CUDACC
+// __global__
 inline void FindEuclideanKnn_BruteForce(int32_t* nearest_neighbor_indices, float* squared_distances, const int k,
                                         const int reference_point_count, const Eigen::Vector3f& query_point,
                                         const NDArrayIndexer& reference_point_indexer) {

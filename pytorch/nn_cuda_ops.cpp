@@ -18,8 +18,8 @@
 // using namespace nnrt::geometry::kernel::warp;
 // using namespace nnrt::core::kernel::knn;
 
-// using namespace open3d;
-// namespace o3c = open3d::core;
+using namespace open3d;
+namespace o3c = open3d::core;
 // namespace o3u = open3d::utility;
 // using namespace open3d::t::geometry::kernel;
 
@@ -77,9 +77,45 @@ void torch_launch_add2(torch::Tensor &c,
                 n);
 }
 
-void compute_anchors_and_weights_euclidean_c(){
-
+void compute_anchors_and_weights_euclidean_c(torch::Tensor &a){
       
+      // py::class_<Tensor> &tensor;
+      // ComputeAnchorsAndWeightsEuclidean_CCC()
+      // o3c::Tensor intrinsic_t;
+      // intrinsic_t.FromDLPack(anchors)
+      // open3d::core::Device device= core::Device::DeviceType::CPU;
+	// open3d::utility::LogInfo("Not fully");
+	// // o3c::Device::DeviceType a;
+	// // open3d::core::Tensor b(anchors,device=core::Device::DeviceType::CPU);
+      // int numRays=5;
+      // auto rays = core::Tensor::Zeros({numRays, 6}, core::Float32,core::Device("CPU:0"));
+      // return rays;
+      // py::object obj = anchors;
+      // py::print(py::str("1111"));
+      // py::print(obj);
+      // // obj.Flatten(0,-1);
+      // // py::print(py::type(obj));
+      // // o3c::Tensor *cls = o3c::Tensor();
+      // // o3c::Tensor intrinsic_t = o3c::Tensor::Init<double>(
+      // //       {{1.222, 0, 1.222},
+      // //        {0, 1.222, 1.222},
+      // //        {0, 0, 1}});
+
+      float * c= (float *)a.data_ptr();
+
+      // return a;
+      // py::object intrinsic_py = py::cast(rays);
+      // return intrinsic_py;
+      // return py::str("1111");
+      // o3c::Tensor *cls = anchors.cast<o3c::Tensor *>();
+      // using namespace std;
+      // py::object Tensor = py::module_::import("open3d.core").attr("Tensor");
+
+      // py::object scipy = py::module_::import("scipy");
+      // return scipy.attr("__version__");
+      // Tensor=anchors;
+      // string a=Tensor("1111")
+      // cout<<a<<endl;
 }
 
 
@@ -93,17 +129,18 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       m.def("backproject_depth_float",
             &backproject_depth_float,
             "backproject_depth_float");
-      m.def("ComputeAnchorsAndWeightsEuclidean_C",
-       &ComputeAnchorsAndWeightsEuclidean_C,
-      "ComputeAnchorsAndWeightsEuclidean_C");   
+      // m.def("ComputeAnchorsAndWeightsEuclidean_C",
+      //  &ComputeAnchorsAndWeightsEuclidean_C,
+      // "ComputeAnchorsAndWeightsEuclidean_C");   
 
 	// m.def("compute_anchors_and_weights_euclidean",
 	// 	&compute_anchors_and_weights_euclidean,
 	// 	"compute_anchors_and_weights_euclidean");
       
       // m.def("compute_anchors_and_weights_euclidean", py::overload_cast<const o3c::Tensor&, const o3c::Tensor&, int, int,
-      //                   float>(&compute_anchors_and_weights_euclidean), "points"_a, "nodes"_a, "anchor_count"_a,
-      //       "minimum_valid_anchor_count"_a, "node_coverage"_a);
+      //                   float>(&compute_anchors_and_weights_euclidean), "points");
+      
+      // m.def("compute_anchors_and_weights_euclidean", &compute_anchors_and_weights_euclidean_c, "ComputeAnchorsAndWeightsEuclidean_CCC");
 }
 
 TORCH_LIBRARY(nn_cuda, m) {

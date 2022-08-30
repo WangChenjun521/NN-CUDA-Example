@@ -8,6 +8,7 @@ __global__ void add2_kernel(float* c,
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
             i < n; i += gridDim.x * blockDim.x) {
         c[i] = a[i] + b[i];
+        // printf("%d\n",c[i]);
     }
 }
 __global__ void helloFromGPU(void)
@@ -17,10 +18,10 @@ __global__ void helloFromGPU(void)
 
 __global__ void VecAdd(int* A, int* B, int* C)
 {
-    for(int j=0 ;j<100000000;j++){
-        int i = threadIdx.x;
-        C[i] = A[i] + B[i];
-    }
+
+    int i = threadIdx.x;
+    C[i] = A[i] + B[i];
+
     
 }
 
@@ -31,38 +32,42 @@ void launch_add2(float* c,
     dim3 grid((n + 1023) / 1024);
     dim3 block(1024);
     helloFromGPU<<<1,10>>>();
+    using namespace std;
+    cout<<sizeof(c)<<endl;
 
-    // add2_kernel<<<grid, block>>>(c, a, b, n);
-    const int N=5;
-    int A[N]={1,2,3,4,5};
-    int B[N]={2,2,2,2,2};
-    int C[N]={0};
+    add2_kernel<<<grid, block>>>(c, a, b, n);
+    
 
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
+    // const int N=5;
+    float A[n]={0};
+    float B[n]={0};
+    float C[n]={0};
 
-    cudaSetDevice(0);
-    cudaMalloc((void**)&dev_c, N * sizeof(int));
-    cudaMalloc((void**)&dev_a, N * sizeof(int));
-    cudaMalloc((void**)&dev_b, N * sizeof(int));
-    cudaMemcpy(dev_a, A, N * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_b, B, N * sizeof(int), cudaMemcpyHostToDevice);
+    float *dev_a = 0;
+    float *dev_b = 0;
+    // float *dev_c = 0;
 
-    VecAdd<<<1, N>>>(dev_a, dev_b, dev_c);
+    // cudaSetDevice(0);
+    // cudaMalloc((void**)&dev_c, n * sizeof(float));
+    // cudaMalloc((void**)&dev_a, n * sizeof(float));
+    // cudaMalloc((void**)&dev_b, n * sizeof(float));
+    // cudaMemcpy(dev_a, A, n * sizeof(float), cudaMemcpyHostToDevice);
+    // cudaMemcpy(dev_b, B, n * sizeof(float), cudaMemcpyHostToDevice);
 
-    cudaGetLastError();
-    cudaDeviceSynchronize();
-    cudaMemcpy(C, dev_c, N * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
+    // VecAdd<<<1, n>>>(dev_a, dev_b, dev_c);
 
-    for (int i = 0; i < N; i++)
+    // cudaGetLastError();
+    // cudaDeviceSynchronize();
+    cudaMemcpy(C, c, n * sizeof(float), cudaMemcpyDeviceToHost);
+    // cudaFree(dev_c);
+    // cudaFree(dev_a);
+    // cudaFree(dev_b);
+
+    for (int i = 0; i < n; i++)
     {
         if (i!=0) printf(" ");
         printf("%d",C[i]);
-        if (i==N-1)printf("\n");
+        if (i==n-1)printf("\n");
     }
     
 }
